@@ -78,13 +78,14 @@ def oneshot_behavior(name, variable_name, behaviour):
 
 	# Wait until the scenario has ended
 	subtree_root = py_trees.composites.Selector(name=name)
-	check_flag = py_trees.blackboard.CheckBlackboardVariable(
+	check_flag = py_trees.behaviours.CheckBlackboardVariableValue(
 		name=variable_name + " Done?",
 		variable_name=variable_name,
 		expected_value=True,
 		clearing_policy=py_trees.common.ClearingPolicy.ON_INITIALISE
 	)
-	set_flag = py_trees.blackboard.SetBlackboardVariable(
+
+	set_flag = py_trees.behaviours.SetBlackboardVariable(
 		name="Mark Done",
 		variable_name=variable_name,
 		variable_value=True
@@ -511,21 +512,25 @@ class RouteScenario(BasicScenario):
 		Basic behavior do nothing, i.e. Idle
 		"""
 		scenario_trigger_distance = 1.5  # Max trigger distance between route and scenario
-
-		behavior = py_trees.composites.Parallel(policy=py_trees.common.ParallelPolicy.SUCCESS_ON_ONE)
-
+		behavior = py_trees.composites.Parallel(policy=py_trees.common.ParallelPolicy.SuccessOnOne())
 		subbehavior = py_trees.composites.Parallel(name="Behavior",
-												   policy=py_trees.common.ParallelPolicy.SUCCESS_ON_ALL)
-
+												policy=py_trees.common.ParallelPolicy.SuccessOnAll())
 		scenario_behaviors = []
 		blackboard_list = []
-
+		behavior_counter = {}  # Keep track of the count for each behavior
 		for i, scenario in enumerate(self.list_scenarios):
 			if scenario.scenario.behavior is not None:
 				route_var_name = scenario.config.route_var_name
-
 				if route_var_name is not None:
-					scenario_behaviors.append(scenario.scenario.behavior)
+					behavior_name = scenario.scenario.behavior.name
+					if behavior_name not in behavior_counter:
+						behavior_counter[behavior_name] = 0
+					behavior_counter[behavior_name] += 1
+					unique_name = f"{behavior_name}{behavior_counter[behavior_name]}"
+					renamed_behavior = scenario.scenario.behavior.__class__()
+					
+					renamed_behavior.name = unique_name
+					scenario_behaviors.append(renamed_behavior)
 					blackboard_list.append([scenario.config.route_var_name,
 											scenario.config.trigger_points[0].location])
 				else:
@@ -535,7 +540,6 @@ class RouteScenario(BasicScenario):
 						variable_name=name,
 						behaviour=scenario.scenario.behavior)
 					scenario_behaviors.append(oneshot_idiom)
-
 		# Add behavior that manages the scenarios trigger conditions
 		scenario_triggerer = ScenarioTriggerer(
 			self.ego_vehicles[0],
@@ -544,7 +548,6 @@ class RouteScenario(BasicScenario):
 			scenario_trigger_distance,
 			repeat_scenarios=False
 		)
-
 		subbehavior.add_child(scenario_triggerer)  # make ScenarioTriggerer the first thing to be checked
 		subbehavior.add_children(scenario_behaviors)
 		subbehavior.add_child(Idle())  # The behaviours cannot make the route scenario stop

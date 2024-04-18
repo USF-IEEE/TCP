@@ -120,7 +120,7 @@ def oneshot_behavior(variable_name, behaviour, name=None):
         expected_value=True,
         clearing_policy=py_trees.common.ClearingPolicy.ON_INITIALISE
     )
-    set_flag = py_trees.blackboard.SetBlackboardVariable(
+    set_flag = py_trees.behaviours.SetBlackboardVariable(
         name="Mark Done",
         variable_name=variable_name,
         variable_value=True

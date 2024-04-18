@@ -7,7 +7,7 @@ class GlobalConfig:
 	pred_len = 4 # future waypoints predicted
 
 	# data root
-	root_dir_all = "tcp_carla_data"
+	root_dir_all = "/media/rpal/Drive_10TB/John/data/tcp_carla_data"
 
 	train_towns = ['town01', 'town03', 'town04',  'town06', ]
 	val_towns = ['town02', 'town05', 'town07', 'town10']
@@ -57,6 +57,10 @@ class GlobalConfig:
 	rl_ckpt = "roach/log/ckpt_11833344.pth"
 
 	img_aug = True
+
+	# --- JEPA Config -- #
+	jepa_config_file = "/media/rpal/Drive_10TB/John/jepa/huggingface/params-encoder.yaml"
+	jepa_embed_dim = 1024
 
 
 	def __init__(self, **kwargs):

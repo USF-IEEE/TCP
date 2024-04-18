@@ -163,7 +163,7 @@ class BasicScenario(object):
         if ego_vehicle_route:
             if config.route_var_name is not None:
                 set_name = "Reset Blackboard Variable: {} ".format(config.route_var_name)
-                return py_trees.blackboard.SetBlackboardVariable(name=set_name,
+                return py_trees.behaviours.SetBlackboardVariable(name=set_name,
                                                                  variable_name=config.route_var_name,
                                                                  variable_value=False)
         return None
@@ -236,7 +236,7 @@ class Scenario(object):
             # Create py_tree for test criteria
             self.criteria_tree = py_trees.composites.Parallel(
                 name="Test Criteria",
-                policy=py_trees.common.ParallelPolicy.SUCCESS_ON_ONE
+                policy=py_trees.common.ParallelPolicy.SuccessOnAll()
             )
             self.criteria_tree.add_children(self.test_criteria)
             self.criteria_tree.setup(timeout=1)
@@ -247,7 +247,7 @@ class Scenario(object):
         self.timeout_node = TimeOut(self.timeout, name="TimeOut")
 
         # Create overall py_tree
-        self.scenario_tree = py_trees.composites.Parallel(name, policy=py_trees.common.ParallelPolicy.SUCCESS_ON_ONE)
+        self.scenario_tree = py_trees.composites.Parallel(name, policy=py_trees.common.ParallelPolicy.SuccessOnOne())
         if behavior is not None:
             self.scenario_tree.add_child(self.behavior)
         self.scenario_tree.add_child(self.timeout_node)

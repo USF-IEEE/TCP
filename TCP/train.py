@@ -11,9 +11,9 @@ from torch.distributions import Beta
 
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import ModelCheckpoint
-from pytorch_lightning.plugins import DDPPlugin
+from pytorch_lightning.strategies import DDPStrategy
 
-from TCP.model import TCP
+from TCP.model import TCP_JEPA as TCP
 from TCP.data import CARLA_Data
 from TCP.config import GlobalConfig
 
@@ -150,19 +150,20 @@ class TCP_planner(pl.LightningModule):
 		self.log('val_loss', val_loss.item(), sync_dist=True)
 
 
-if __name__ == "__main__":
-	parser = argparse.ArgumentParser()
+def main(args=None):
+	if args == None:
+		parser = argparse.ArgumentParser()
 
-	parser.add_argument('--id', type=str, default='TCP', help='Unique experiment identifier.')
-	parser.add_argument('--epochs', type=int, default=60, help='Number of train epochs.')
-	parser.add_argument('--lr', type=float, default=0.0001, help='Learning rate.')
-	parser.add_argument('--val_every', type=int, default=3, help='Validation frequency (epochs).')
-	parser.add_argument('--batch_size', type=int, default=32, help='Batch size')
-	parser.add_argument('--logdir', type=str, default='log', help='Directory to log data to.')
-	parser.add_argument('--gpus', type=int, default=1, help='number of gpus')
+		parser.add_argument('--id', type=str, default='TCP', help='Unique experiment identifier.')
+		parser.add_argument('--epochs', type=int, default=60, help='Number of train epochs.')
+		parser.add_argument('--lr', type=float, default=0.0001, help='Learning rate.')
+		parser.add_argument('--val_every', type=int, default=3, help='Validation frequency (epochs).')
+		parser.add_argument('--batch_size', type=int, default=64, help='Batch size')
+		parser.add_argument('--logdir', type=str, default='log', help='Directory to log data to.')
+		parser.add_argument('--gpus', type=int, default=1, help='number of gpus')
 
-	args = parser.parse_args()
-	args.logdir = os.path.join(args.logdir, args.id)
+		args = parser.parse_args()
+		args.logdir = os.path.join(args.logdir, args.id)
 
 	# Config
 	config = GlobalConfig()
@@ -181,24 +182,25 @@ if __name__ == "__main__":
 	checkpoint_callback = ModelCheckpoint(save_weights_only=False, mode="min", monitor="val_loss", save_top_k=2, save_last=True,
 											dirpath=args.logdir, filename="best_{epoch:02d}-{val_loss:.3f}")
 	checkpoint_callback.CHECKPOINT_NAME_LAST = "{epoch}-last"
-	trainer = pl.Trainer.from_argparse_args(args,
-											default_root_dir=args.logdir,
-											gpus = args.gpus,
-											accelerator='ddp',
-											sync_batchnorm=True,
-											plugins=DDPPlugin(find_unused_parameters=False),
-											profiler='simple',
-											benchmark=True,
-											log_every_n_steps=1,
-											flush_logs_every_n_steps=5,
-											callbacks=[checkpoint_callback,
-														],
-											check_val_every_n_epoch = args.val_every,
-											max_epochs = args.epochs
-											)
+	trainer = pl.Trainer(
+		devices = 1,
+		accelerator='gpu',
+		sync_batchnorm=True,
+		profiler='simple',
+		benchmark=True,
+		log_every_n_steps=1,
+		callbacks=[checkpoint_callback,
+					],
+		check_val_every_n_epoch = args.val_every,
+		max_epochs = args.epochs,
+		# strategy="ddp_notebook",
+		num_nodes=1,
+		)
 
 	trainer.fit(TCP_model, dataloader_train, dataloader_val)
 
+if __name__ == "__main__":
+	main()
 
 
 

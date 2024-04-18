@@ -17,7 +17,7 @@ from torchvision import transforms as T
 
 from leaderboard.autoagents import autonomous_agent
 
-from TCP.model import TCP
+from TCP.model import TCP_JEPA
 from TCP.config import GlobalConfig
 from team_code.planner import RoutePlanner
 
@@ -45,7 +45,7 @@ class TCPAgent(autonomous_agent.AutonomousAgent):
 		self.initialized = False
 
 		self.config = GlobalConfig()
-		self.net = TCP(self.config)
+		self.net = TCP_JEPA(self.config)
 
 
 		ckpt = torch.load(path_to_conf_file)
